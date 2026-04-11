@@ -1,9 +1,24 @@
+
+# Documentação da action usada para deploy em Azure Web Apps
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+
+# Repositório com outras GitHub Actions para Azure
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+# Mais informações sobre Python + GitHub Actions + Azure App Service
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+
+
+# NOME DO WORKFLOW
+
+
 # Nome que aparecerá na aba "Actions" do GitHub
 name: Build and deploy Python app to Azure Web App - Lab06EngSoft
 
 
 
 # EVENTOS QUE DISPARAM O WORKFLOW
+
 
 on:
   # Executa quando houver push no repositório
@@ -16,13 +31,13 @@ on:
   workflow_dispatch:
 
 
-
 # JOBS DO WORKFLOW
+
 
 jobs:
 
-
   # JOB 1: BUILD
+
   build:
     # Define que esse job será executado em uma máquina Ubuntu mais recente
     runs-on: ubuntu-latest
@@ -46,12 +61,15 @@ jobs:
           # Define a versão do Python usada na pipeline
           python-version: '3.14'
 
+      # ---------------------------------------------------
       # NOVO STEP SOLICITADO NO EXERCÍCIO
+      # ---------------------------------------------------
       # Esse step apenas imprime uma mensagem no console/log
       # Ele foi colocado antes da etapa de build local
       - name: Exibir mensagem inicial
         run: echo "Iniciando o deploy do meu projeto!"
 
+      # 🛠️ Local Build Section (Optional)
       # A seção abaixo serve para validar localmente se o projeto consegue
       # criar ambiente virtual e instalar as dependências antes do deploy.
       # Isso ajuda a encontrar erros cedo, ainda na etapa de CI.
@@ -86,10 +104,16 @@ jobs:
             .
             !antenv/
 
+      # 🚫 Opting Out of Oryx Build
+      # Caso queira desabilitar o build automático do Oryx no Azure:
+      # 1. Remova a variável SCM_DO_BUILD_DURING_DEPLOYMENT das configurações do App Service
+      # 2. Use outro modelo de workflow conforme os exemplos oficiais:
+      #    https://github.com/Azure/actions-workflow-samples/tree/master/AppService
 
 
-
+  # -------------------------------------------------------
   # JOB 2: DEPLOY
+  # -------------------------------------------------------
   deploy:
     # Esse job também roda em Ubuntu
     runs-on: ubuntu-latest
