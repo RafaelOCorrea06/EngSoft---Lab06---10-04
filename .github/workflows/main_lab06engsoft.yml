@@ -1,76 +1,143 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
+# Nome que aparecerá na aba "Actions" do GitHub
 name: Build and deploy Python app to Azure Web App - Lab06EngSoft
 
+
+
+# EVENTOS QUE DISPARAM O WORKFLOW
+
 on:
+  # Executa quando houver push no repositório
   push:
+    # Restringe a execução apenas quando o push acontecer na branch main
     branches:
       - main
+
+  # Permite executar o workflow manualmente pelo GitHub
   workflow_dispatch:
 
+
+
+# JOBS DO WORKFLOW
+
 jobs:
+
+
+  # JOB 1: BUILD
   build:
+    # Define que esse job será executado em uma máquina Ubuntu mais recente
     runs-on: ubuntu-latest
+
+    # Permissões desse job
     permissions:
+      # Permissão de leitura do conteúdo do repositório
+      # Necessária para a action actions/checkout
       contents: read #This is required for actions/checkout
 
+    # Etapas executadas dentro do job build
     steps:
+
+      # Faz checkout do código do repositório para a máquina do runner
       - uses: actions/checkout@v4
 
+      # Configura a versão do Python que será usada no workflow
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
+          # Define a versão do Python usada na pipeline
           python-version: '3.14'
 
-      # 🛠️ Local Build Section (Optional)
-      # The following section in your workflow is designed to catch build issues early on the client side, before deployment. This can be helpful for debugging and validation. However, if this step significantly increases deployment time and early detection is not critical for your workflow, you may remove this section to streamline the deployment process.
+      # NOVO STEP SOLICITADO NO EXERCÍCIO
+      # Esse step apenas imprime uma mensagem no console/log
+      # Ele foi colocado antes da etapa de build local
+      - name: Exibir mensagem inicial
+        run: echo "Iniciando o deploy do meu projeto!"
+
+      # A seção abaixo serve para validar localmente se o projeto consegue
+      # criar ambiente virtual e instalar as dependências antes do deploy.
+      # Isso ajuda a encontrar erros cedo, ainda na etapa de CI.
       - name: Create and Start virtual environment and Install dependencies
         run: |
+          # Cria um ambiente virtual chamado "antenv"
           python -m venv antenv
+
+          # Ativa o ambiente virtual no Ubuntu/Linux
           source antenv/bin/activate
+
+          # Instala todas as dependências listadas no arquivo requirements.txt
           pip install -r requirements.txt
-                
-      # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
+
+      # Por padrão, quando a integração de CI/CD com Azure é habilitada
+      # pelo portal do Azure, a configuração SCM_DO_BUILD_DURING_DEPLOYMENT
+      # fica como true.
+      #
+      # Isso faz com que o Azure use o Oryx durante o deploy para compilar
+      # a aplicação e instalar dependências na própria plataforma.
+      #
+      # Por isso, a pasta do ambiente virtual local (antenv) é excluída do
+      # artefato enviado, evitando envio de arquivos desnecessários.
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
+          # Nome do artefato que será salvo para uso no próximo job
           name: python-app
+
+          # Arquivos e pastas que serão enviados no artefato
           path: |
             .
             !antenv/
 
-      # 🚫 Opting Out of Oryx Build
-      # If you prefer to disable the Oryx build process during deployment, follow these steps:
-      # 1. Remove the SCM_DO_BUILD_DURING_DEPLOYMENT app setting from your Azure App Service Environment variables.
-      # 2. Refer to sample workflows for alternative deployment strategies: https://github.com/Azure/actions-workflow-samples/tree/master/AppService
-      
 
+
+
+  # JOB 2: DEPLOY
   deploy:
+    # Esse job também roda em Ubuntu
     runs-on: ubuntu-latest
+
+    # Esse job só começa depois que o job "build" terminar com sucesso
     needs: build
+
+    # Permissões do job deploy
     permissions:
+      # Permissão para gerar/gravar o token JWT usado no login do Azure
       id-token: write #This is required for requesting the JWT
+
+      # Permissão de leitura do conteúdo do repositório
       contents: read #This is required for actions/checkout
 
+    # Etapas do job deploy
     steps:
+
+      # Baixa o artefato criado no job build
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
+          # Nome do artefato que será baixado
           name: python-app
-      
+
+      # Faz login no Azure usando credenciais armazenadas como secrets
       - name: Login to Azure
         uses: azure/login@v2
         with:
+          # Client ID da aplicação/serviço no Azure
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FF4AE1FFC6C34B2E85F3708E48F9550A }}
+
+          # Tenant ID do Azure
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D4AED2477CA642ECA89F9BA2E002E40A }}
+
+          # Subscription ID da conta Azure
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8C2E80570E064F50B5F81842B07D43DF }}
 
+      # Faz o deploy da aplicação para o Azure Web App
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
+
+        # ID interno da etapa, útil caso outra etapa precise referenciá-la
         id: deploy-to-webapp
+
         with:
+          # Nome da aplicação Web App no Azure
           app-name: 'Lab06EngSoft'
+
+          # Slot de deploy. Nesse caso, produção
           slot-name: 'Production'
-          
